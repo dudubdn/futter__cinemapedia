@@ -10,7 +10,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Text(Environment.theMovieDbKey),
+        child: Text(Environment.theMovieDbKey()),
       ),
     );
   }
