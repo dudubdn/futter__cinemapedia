@@ -1,6 +1,7 @@
-import 'package:cinemapedia/domain/entities/movie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:cinemapedia/domain/entities/movie.dart';
 import '../../providers/providers.dart';
 
 class MovieScreen extends ConsumerStatefulWidget {
@@ -20,7 +21,7 @@ class MovieScreenState extends ConsumerState<MovieScreen> {
   void initState() {
     super.initState();
     ref.read(movieInfoProvider.notifier).loadMovie(widget.movieId);
-    ref.read(actorsByMovieInfoProvider.notifier).loadActors(widget.movieId);
+    ref.read(actorsByMovieProvider.notifier).loadActors(widget.movieId);
   }
 
   @override
@@ -43,9 +44,8 @@ class MovieScreenState extends ConsumerState<MovieScreen> {
         slivers: [
           _CustomSliverAppBar(movie: movie),
           SliverList(
-              delegate: SliverChildBuilderDelegate(
-                  (context, index) => _CustomMovieDetails(movie: movie),
-                  childCount: 1))
+              delegate:
+                  SliverChildBuilderDelegate((context, index) => _CustomMovieDetails(movie: movie), childCount: 1))
         ],
       ),
     );
@@ -98,7 +98,6 @@ class _CustomMovieDetails extends StatelessWidget {
             ],
           ),
         ),
-
         Padding(
             padding: const EdgeInsets.all(8),
             child: Wrap(
@@ -107,19 +106,80 @@ class _CustomMovieDetails extends StatelessWidget {
                       margin: const EdgeInsets.only(right: 10),
                       child: Chip(
                         label: Text(gender),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
                     ))
               ],
             )),
-
-        //TODO: Mostrar actores pelicula ListView
+        _ActorsByMovie(
+          movieId: movie.id.toString(),
+        ),
         const SizedBox(
-          height: 100,
+          height: 20,
         )
       ],
     );
+  }
+}
+
+class _ActorsByMovie extends ConsumerWidget {
+  final String movieId;
+  const _ActorsByMovie({required this.movieId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actorsByMovie = ref.watch(actorsByMovieProvider);
+    if (actorsByMovie[movieId] == null) {
+      return const Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+        ),
+      );
+    }
+    final actors = actorsByMovie[movieId] ?? [];
+    return SizedBox(
+        height: 300,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: actors.length,
+          itemBuilder: (context, index) {
+            final actor = actors[index];
+
+            return Container(
+              padding: const EdgeInsets.all(8.0),
+              width: 135,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FadeInRight(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.network(
+                        actor.profilePath,
+                        height: 180,
+                        width: 135,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.topCenter,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 5,
+                  ),
+                  Text(
+                    actor.character ?? '',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    maxLines: 2,
+                  ),
+                  Text(
+                    actor.name,
+                    style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12, overflow: TextOverflow.ellipsis),
+                  ),
+                ],
+              ),
+            );
+          },
+        ));
   }
 }
 
@@ -137,14 +197,21 @@ class _CustomSliverAppBar extends StatelessWidget {
       foregroundColor: Colors.white,
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-        title: Text(
-          movie.title,
-          style: const TextStyle(fontSize: 20),
-          textAlign: TextAlign.start,
-        ),
+        // title: Text(
+        //   movie.title,
+        //   style: const TextStyle(fontSize: 20),
+        //   textAlign: TextAlign.start,
+        // ),
         background: Stack(children: [
           SizedBox.expand(
-            child: Image.network(movie.posterPath, fit: BoxFit.cover),
+            child: Image.network(
+              movie.posterPath,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress != null) return const SizedBox();
+                return FadeIn(child: child);
+              },
+            ),
           ),
           const SizedBox.expand(
             child: DecoratedBox(
@@ -159,17 +226,13 @@ class _CustomSliverAppBar extends StatelessWidget {
           const SizedBox.expand(
             child: DecoratedBox(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: [
-                      0.0,
-                      0.2,
-                    ],
-                    colors: [
-                      Colors.black87,
-                      Colors.transparent,
-                    ]),
+                gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: [
+                  0.0,
+                  0.2,
+                ], colors: [
+                  Colors.black87,
+                  Colors.transparent,
+                ]),
               ),
             ),
           )
