@@ -85,6 +85,7 @@ class _Slide extends StatelessWidget {
         children: [
           SizedBox(
             width: 150,
+            height: 200,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: Image.network(
